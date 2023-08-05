@@ -16,4 +16,6 @@ Generates a textured 3D mesh in Blender with one click!
 
 7. Click the "Install Pip Requirements" button in the preferences window
 
-8. Enjoy!
+8. Once the requirements install, press the N key in the viewport, and go to the "Generate" tab on the right side
+
+9. Enjoy!
