@@ -7,15 +7,6 @@ import atexit
 import string
 import random
 import os.path
-from pathlib import Path
-from PIL import Image
-import numpy as np
-import requests
-import torch
-import cv2
-import math
-import threading
-import argparse
 
 bl_info = {
     "name": "AI Mesh Creator",
@@ -136,28 +127,64 @@ def generate_model(depthPath, texturePath, objPath, mtlPath, matName):
 	print("FINISHED")
 
 
+
 def generate(prompt):
+    from pathlib import Path
+    from PIL import Image
+    import numpy as np
+    import requests
+    import torch
+    import cv2
+    import threading
+    import argparse
     iteration_number = random.randint(1, 9999999999999999999)
     os.makedirs(os.path.join(os.path.dirname(__file__), (prompt.replace(" ", "_") + str(iteration_number))))
     prompt_path = os.path.join(os.path.dirname(__file__), (prompt.replace(" ", "_") + str(iteration_number)))
-    os.makedirs(os.path.join(prompt_path, "Generated_Image"))
     os.makedirs(os.path.join(prompt_path, "Depth_Map"))
+    os.makedirs(os.path.join(prompt_path, "Generated_Image"))
     os.makedirs(os.path.join(prompt_path, "Mesh"))
+    os.makedirs(os.path.join(prompt_path, "Normal_Map"))
+
+
 
     # GENERATE AI IMAGE
 
+    torch.cuda.empty_cache()
     from diffusers import StableDiffusionPipeline
     model_id = "runwayml/stable-diffusion-v1-5"
     pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
     pipe = pipe.to("cuda")
     image = pipe(prompt).images[0]
     os.chdir(os.path.join(prompt_path, "Generated_Image"))
-    rgb_image_name = (prompt + "_" + str(iteration_number) + ".png")
+    rgb_image_name = (prompt.replace(" ", "_") + "_" + str(iteration_number) + ".png")
     rgb_image_path = os.path.join(prompt_path, "Generated_Image", rgb_image_name)
     image.save(rgb_image_path)
+    
+
+
+    # NORMAL MAP
+
+    torch.cuda.empty_cache()
+    from PIL import ImageFilter
+    input_image_path = rgb_image_path
+    input_image = Image.open(input_image_path)
+    input_image = input_image.convert('RGB')
+    gray_image = input_image.convert('L')
+    edges = gray_image.filter(ImageFilter.FIND_EDGES)
+    edges_array = (np.array(edges) / 255.0) * 2 - 1
+    edges_array = edges_array[..., np.newaxis]
+    normal_map = np.zeros((edges_array.shape[0], edges_array.shape[1], 3))
+    normal_map[..., 2] = 1.0
+    normal_map[..., 0] = edges_array[..., 0]
+    normal_map_image = Image.fromarray((normal_map * 255).astype(np.uint8))
+    normal_map_image_path = os.path.join(prompt_path, "Normal_Map", (prompt.replace(" ", "_") + "_" + str(iteration_number) + "_normal.png"))
+    normal_map_image.save(normal_map_image_path)
+
+
 
     # MONOCULAR DEPTH EST
 
+    torch.cuda.empty_cache()
     from transformers import DPTImageProcessor, DPTForDepthEstimation
     processor = DPTImageProcessor.from_pretrained("Intel/dpt-large")
     model = DPTForDepthEstimation.from_pretrained("Intel/dpt-large")
@@ -179,16 +206,39 @@ def generate(prompt):
     depth_image_name = (prompt + "_" + str(iteration_number) + ".png")
     depth_image_path = os.path.join(prompt_path, "Depth_Map", depth_image_name)
     depth.save(depth_image_path)
-    
     depthPath = depth_image_path
     texturePath = rgb_image_path
-    objPath = os.path.join(prompt_path, "Mesh", (prompt + "_" + str(iteration_number) + ".obj"))
-    mtlPath = os.path.join(prompt_path, "Mesh", (prompt + "_" + str(iteration_number) + ".mtl"))
-    matName = prompt.replace(" ", "_")
+    objPath = os.path.join(prompt_path, "Mesh", (prompt.replace(" ", "_") + "_" + str(iteration_number) + ".obj"))
+    mtlPath = os.path.join(prompt_path, "Mesh", (prompt.replace(" ", "_") + "_" + str(iteration_number) + ".mtl"))
+    matName = (prompt.replace(" ", "_") + "_" + str(iteration_number))
+
+
 
     # MODEL FROM DEPTH AND RGB	
     
     generate_model(depthPath, texturePath, objPath, mtlPath, matName)
+    torch.cuda.empty_cache()
+
+
+
+    # ADD NORMAL MAP TO MTL
+
+    mtl_path = os.path.join(prompt_path, "Mesh", (prompt.replace(" ", "_") + "_" + str(iteration_number) + ".mtl"))
+    material_name = (prompt.replace(" ", "_") + "_" + str(iteration_number))
+    normal_map_path = normal_map_image_path
+    with open(mtl_path, 'r') as f:
+        mtl_content = f.read()
+    material_start = mtl_content.find('newmtl ' + material_name)
+    if material_start == -1:
+        print(f"Material '{material_name}' not found in the .mtl file.")
+        return
+    normal_map_line = f"map_Bump {normal_map_path}\n"
+    mtl_content = mtl_content[:material_start] + normal_map_line + mtl_content[material_start:]
+    with open(mtl_path, 'w') as f:
+        f.write(mtl_content)
+    torch.cuda.empty_cache()
+
+
 
     # IMPORT GENERATED MODEL TO SCENE
 
@@ -203,9 +253,31 @@ def generate(prompt):
     smooth_modifier = imported_object.modifiers.new(name="Smooth", type='SMOOTH')
     smooth_modifier.factor = smooth_factor
     smooth_modifier.iterations = repeat_count
+    
+
+
+    # ADD NORMAL MAP TO OBJECT MATERIAL
+
+    selected_object = bpy.context.active_object
+    if len(selected_object.data.materials) == 0:
+        material = bpy.data.materials.new(name="Material")
+        selected_object.data.materials.append(material)
+    else:
+        material = selected_object.data.materials[0]
+    texture_node = material.node_tree.nodes.new(type='ShaderNodeTexImage')
+    texture_node.location = (0, 300)
+    texture_node.image = bpy.data.images.load(normal_map_path)
+    normal_map_node = material.node_tree.nodes.new(type='ShaderNodeNormalMap')
+    normal_map_node.location = (200, 300)
+    diffuse_shader_node = material.node_tree.nodes["Principled BSDF"]
+    diffuse_shader_node.location = (400, 300)
+    material.node_tree.links.new(texture_node.outputs['Color'], normal_map_node.inputs['Color'])
+    material.node_tree.links.new(normal_map_node.outputs['Normal'], diffuse_shader_node.inputs['Normal'])
+    material.node_tree.nodes.active = normal_map_node
+    material.use_nodes = True
+
 
 # PIP REQUIREMENTS
-
 
 class PipRequirementsAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
