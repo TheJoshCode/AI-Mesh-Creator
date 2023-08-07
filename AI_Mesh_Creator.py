@@ -7,6 +7,7 @@ import atexit
 import string
 import random
 import os.path
+import threading
 
 bl_info = {
     "name": "AI Mesh Creator",
@@ -135,7 +136,6 @@ def generate(prompt):
     import requests
     import torch
     import cv2
-    import threading
     import argparse
     iteration_number = random.randint(1, 9999999999999999999)
     os.makedirs(os.path.join(os.path.dirname(__file__), (prompt.replace(" ", "_") + str(iteration_number))))
