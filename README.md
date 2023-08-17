@@ -21,5 +21,5 @@ ie, if you prompt with "A Tree", your generated folder might look something like
 # DEPTH MAP
 ![](https://imgur.com/loPOPMD.png)  
 
-# FINAL MESH
+# FINAL MESH - BOTTOM VIEW FOR PERSPECTIVE
 ![](https://imgur.com/PngsuJW.png)
