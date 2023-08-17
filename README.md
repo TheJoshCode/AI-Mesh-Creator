@@ -1,21 +1,7 @@
 # AI-Mesh-Creator
-Generates a textured 3D mesh in Blender with one click!
+Generates a textured 3D mesh with One Click!
 
 # INSTALLATION
-1. Download the repository
-
-2. Extract to a new folder
-
-3. In Blender, Click Edit>Preferences
-
-4. Go to Add-ons
-
-5. In the top right of the window, click "Install"
-
-6. Find the extracted "AI_Mesh_Creator.py" file you downloaded earlier
-
-7. Click the "Install Pip Requirements" button in the preferences window
-
-8. Once the requirements install, press the N key in the viewport, and go to the "Generate" tab on the right side
-
-9. Enjoy!
+1. Run "Install.bat"
+2. Open the UI with the "AI_Mesh_Creator.py" Script
+3. Enjoy!
