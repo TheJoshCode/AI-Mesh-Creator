@@ -1,9 +1,6 @@
 # PYTHON IS REQUIRED - DOWNLOAD IT HERE:
 https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe
 
-# AI-Mesh-Creator
-Generates a textured 3D mesh with One Click!
-
 # INSTALLATION
 1. Run "Install.bat"
 2. Open the UI with the "AI_Mesh_Creator.py" Script
