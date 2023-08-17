@@ -1,0 +1,1 @@
+pip install opencv-python torch customtkinter pillow diffusers accelerate
