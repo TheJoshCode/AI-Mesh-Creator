@@ -1,4 +1,4 @@
-# PYHTON IS REQUIRED - DOWNLOAD IT HERE:
+# PYTHON IS REQUIRED - DOWNLOAD IT HERE:
 https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe
 
 # AI-Mesh-Creator
