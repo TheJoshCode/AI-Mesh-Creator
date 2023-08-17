@@ -14,3 +14,5 @@ Generates a textured 3D mesh with One Click!
 
 # MODELS ARE SAVED IN THE GENERATED PROMPT FOLDER
 ie, if you prompt with "A Tree", your generated folder might look something like "A_Tree13937457292", the mesh will be in a "Mesh" Subfolder
+
+![](https://imgur.com/KKIdWAk.png)  ![](https://imgur.com/loPOPMD.png)  
