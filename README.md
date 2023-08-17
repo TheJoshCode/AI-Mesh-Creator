@@ -7,4 +7,4 @@ Generates a textured 3D mesh with One Click!
 3. Enjoy!
 
 # Simple UI
-![alt text](https://imgur.com/a/nUI3fnQ)
+![alt text](https://imgur.com/a/nUI3fnQ.png)
